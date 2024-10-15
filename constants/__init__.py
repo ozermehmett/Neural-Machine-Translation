@@ -1,6 +1,8 @@
 SOS_TOKEN = 0
 EOS_TOKEN = 1
 
+MAX_LENGTH = 10
+
 BATCH_SIZE = 16
 EPOCHS = 10
 log_every = 50
