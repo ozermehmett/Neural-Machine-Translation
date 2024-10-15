@@ -1,0 +1,6 @@
+SOS_TOKEN = 0
+EOS_TOKEN = 1
+
+BATCH_SIZE = 16
+EPOCHS = 10
+log_every = 50
