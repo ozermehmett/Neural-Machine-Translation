@@ -1,9 +1,10 @@
 from tensorflow import keras
 import tensorflow as tf
 from .attention import BahdanauAttention
+from config import Config
 
 class Decoder(keras.models.Model):
-    def __init__(self, vocab_size, dec_dim=256, embedding_dim=256):
+    def __init__(self, vocab_size, dec_dim=Config.EMBEDDING_DIM, embedding_dim=Config.EMBEDDING_DIM):
         super(Decoder, self).__init__()
         self.attn = BahdanauAttention(dec_dim)
         self.embedding = keras.layers.Embedding(vocab_size, embedding_dim)
