@@ -4,3 +4,4 @@ gradio
 tqdm
 re
 unicodedata
+matplotlib
