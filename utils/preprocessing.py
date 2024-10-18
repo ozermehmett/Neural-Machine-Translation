@@ -2,7 +2,7 @@ import re
 import unicodedata
 import tensorflow as tf
 from tensorflow import keras
-from language import Lang
+from utils import Lang
 
 def unicodeToAscii(s):
     return "".join(c for c in unicodedata.normalize("NFD", s)
