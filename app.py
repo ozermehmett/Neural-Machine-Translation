@@ -3,9 +3,16 @@ import tensorflow as tf
 import json
 from models.encoder import Encoder
 from models.decoder import Decoder
-from utils.language import Lang
-from utils.preprocessing import normalizeString, sentencetoIndexes
+from utils import Lang
+from utils import normalizeString, sentencetoIndexes
 from config import Config
+
+def initialize_models(encoder, decoder):
+    dummy_input = tf.zeros((1, Config.MAX_LENGTH))
+    encoder_hidden = [tf.zeros((1, 256))]
+    enc_out, enc_hidden = encoder(dummy_input, encoder_hidden)
+    dec_input = tf.expand_dims([Config.SOS_token], 0)
+    decoder(dec_input, enc_hidden, enc_out)
 
 def load_models():
     with open('data/input_lang.json', 'r', encoding='utf-8') as f:
@@ -13,21 +20,22 @@ def load_models():
     with open('data/output_lang.json', 'r', encoding='utf-8') as f:
         output_lang_dict = json.load(f)
 
-    input_lang = Lang("en")
-    output_lang = Lang("tr")
-
+    input_lang = Lang("tr")
+    output_lang = Lang("en")
     input_lang.__dict__ = input_lang_dict
     output_lang.__dict__ = output_lang_dict
 
     encoder = Encoder(input_lang.n_words)
     decoder = Decoder(output_lang.n_words)
 
+    initialize_models(encoder, decoder)
+
     encoder.load_weights('models/weights/encoder.h5')
     decoder.load_weights('models/weights/decoder.h5')
 
     return encoder, decoder, input_lang, output_lang
 
-def translate_text(sentence, encoder, decoder, input_lang, output_lang, max_length=10):
+def translate_text(sentence, encoder, decoder, input_lang, output_lang, max_length=Config.MAX_LENGTH):
     result = ''
     sentence = normalizeString(sentence)
     sentence = sentencetoIndexes(sentence, input_lang)
@@ -38,9 +46,8 @@ def translate_text(sentence, encoder, decoder, input_lang, output_lang, max_leng
         truncating='post'
     )
 
-    encoder_hidden = hidden = [tf.zeros((1, 256))]
+    encoder_hidden = [tf.zeros((1, 256))]
     enc_out, enc_hidden = encoder(sentence, encoder_hidden)
-
     dec_hidden = enc_hidden
     dec_input = tf.expand_dims([Config.SOS_token], 0)
 
@@ -67,23 +74,22 @@ def create_app():
         fn=translate_wrapper,
         inputs=gr.Textbox(
             lines=3,
-            placeholder="Enter English text here...",
-            label="English Text"
+            placeholder="Türkçe metni buraya girin...",
+            label="Türkçe Metin"
         ),
         outputs=gr.Textbox(
             lines=3,
-            label="Turkish Translation"
+            label="İngilizce Çeviri"
         ),
-        title="English to Turkish Neural Machine Translation",
-        description="This application translates English text to Turkish using a neural machine translation model.",
+        title="Türkçeden İngilizceye Sinir Ağı Çeviri Sistemi",
+        description="Bu uygulama, sinir ağı tabanlı makine çevirisi kullanarak Türkçe metinleri İngilizceye çevirir.",
         examples=[
-            ["Hello, how are you?"],
-            ["I love machine learning."],
-            ["What is your name?"]
+            ["Merhaba"],
+            ["Meşgül müsün"],
+            ["Adın ne"]
         ],
         theme=gr.themes.Soft()
     )
-
     return iface
 
 def main():
