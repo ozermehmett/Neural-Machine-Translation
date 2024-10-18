@@ -1,6 +1,9 @@
 import gradio as gr
 import tensorflow as tf
 import json
+import matplotlib.pyplot as plt
+from matplotlib import ticker
+import numpy as np
 from models.encoder import Encoder
 from models.decoder import Decoder
 from utils import Lang
@@ -37,6 +40,8 @@ def load_models():
 
 def translate_text(sentence, encoder, decoder, input_lang, output_lang, max_length=Config.MAX_LENGTH):
     result = ''
+    attention_weights_list = []
+
     sentence = normalizeString(sentence)
     sentence = sentencetoIndexes(sentence, input_lang)
     sentence = tf.keras.preprocessing.sequence.pad_sequences(
@@ -52,7 +57,8 @@ def translate_text(sentence, encoder, decoder, input_lang, output_lang, max_leng
     dec_input = tf.expand_dims([Config.SOS_token], 0)
 
     for _ in range(max_length):
-        dec_out, dec_hidden, _ = decoder(dec_input, dec_hidden, enc_out)
+        dec_out, dec_hidden, attn_weights = decoder(dec_input, dec_hidden, enc_out)
+        attention_weights_list.append(attn_weights)
         pred = tf.argmax(dec_out, axis=1).numpy()
         word = output_lang.int2word[str(pred[0])]
 
@@ -62,13 +68,56 @@ def translate_text(sentence, encoder, decoder, input_lang, output_lang, max_leng
         result += word + " "
         dec_input = tf.expand_dims(pred, 0)
 
-    return result.strip()
+    return result.strip(), tf.concat(attention_weights_list, axis=0)
+
+def plot_attention(attention, input_sentence, predicted_sentence):
+    input_sentence = normalizeString(input_sentence)
+    input_tokens = input_sentence.split()
+    output_tokens = predicted_sentence.split()
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    attention = attention[:len(output_tokens), :len(input_tokens)]
+
+    im = ax.matshow(attention, cmap='RdYlBu_r', vmin=0, vmax=1)
+
+    ax.set_xticks(range(len(input_tokens)))
+    ax.set_yticks(range(len(output_tokens)))
+
+    ax.xaxis.set_ticks_position('top')
+    ax.set_xticklabels(input_tokens, rotation=45, ha='left', fontsize=12, fontweight='medium')
+
+    ax.set_yticklabels(output_tokens, fontsize=12, fontweight='medium')
+
+    ax.grid(True, color='gray', linestyle=':', linewidth=0.5)
+
+    for i in range(len(output_tokens)):
+        for j in range(len(input_tokens)):
+            value = float(attention[i, j])
+            text_color = 'white' if value > 0.5 else 'black'
+            text = f'{value:.2f}'
+            ax.text(j, i, text, ha='center', va='center', color=text_color, fontsize=10)
+
+    cbar = fig.colorbar(im, ax=ax, orientation='horizontal', fraction=0.046, pad=0.07)
+    cbar.ax.set_xlabel('Attention Weight', fontsize=10)
+
+    plt.xlabel('Turkish (Source Lang)', fontsize=12, labelpad=10)
+    plt.ylabel('English (Target Lang)', fontsize=12, labelpad=10)
+
+    plt.tight_layout()
+
+    return fig
+
 
 def create_app():
     encoder, decoder, input_lang, output_lang = load_models()
 
     def translate_wrapper(text):
-        return translate_text(text, encoder, decoder, input_lang, output_lang)
+        translation, attention_weights = translate_text(text, encoder, decoder, input_lang, output_lang)
+
+        fig = plot_attention(attention_weights.numpy(), text, translation)
+
+        return translation, fig
 
     iface = gr.Interface(
         fn=translate_wrapper,
@@ -77,12 +126,16 @@ def create_app():
             placeholder="Türkçe metni buraya girin...",
             label="Türkçe Metin"
         ),
-        outputs=gr.Textbox(
-            lines=3,
-            label="İngilizce Çeviri"
-        ),
-        title="Türkçeden İngilizceye Sinir Ağı Çeviri Sistemi",
-        description="Bu uygulama, sinir ağı tabanlı makine çevirisi kullanarak Türkçe metinleri İngilizceye çevirir.",
+        outputs=[
+            gr.Textbox(
+                lines=3,
+                label="English translate"
+            ),
+            gr.Plot(
+                label="Attention Matrix Plot"
+            )
+        ],
+        title="GRU-based Neural Machine Translation!",
         examples=[
             ["Merhaba"],
             ["Meşgül müsün"],
