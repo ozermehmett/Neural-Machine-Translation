@@ -94,7 +94,7 @@ def plot_attention(attention, input_sentence, predicted_sentence):
     for i in range(len(output_tokens)):
         for j in range(len(input_tokens)):
             value = float(attention[i, j])
-            text_color = 'white' if value > 0.5 else 'black'
+            text_color = 'black'
             text = f'{value:.2f}'
             ax.text(j, i, text, ha='center', va='center', color=text_color, fontsize=10)
 
@@ -139,7 +139,8 @@ def create_app():
         examples=[
             ["Merhaba"],
             ["Meşgül müsün"],
-            ["Adın ne"]
+            ["Adın ne"],
+            ["Arkadaşıma gidiyorum"]
         ],
         theme=gr.themes.Soft()
     )
