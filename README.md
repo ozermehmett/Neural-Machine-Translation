@@ -18,6 +18,10 @@ gradio
 numpy
 ```
 
+## 🌟 Example Usage
+
+https://github.com/user-attachments/assets/08c23522-e005-4dc6-b39b-0d735d8a49e1
+
 ## 🛠️ Installation
 
 ### 1. Clone the Repository
