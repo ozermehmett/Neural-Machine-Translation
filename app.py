@@ -148,7 +148,7 @@ def create_app():
 
 def main():
     iface = create_app()
-    iface.launch(share=True)
+    iface.launch(share=True, server_name="0.0.0.0", server_port=7860)
 
 if __name__ == "__main__":
     main()
